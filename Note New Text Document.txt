@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <link rel="icon" href="app_assets.png" type="image/png">
+    <link rel="apple-touch-icon" href="app_assets.png">    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-Drug Anonymous Alert System</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; text-align: center; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
+        h2 { color: #d9534f; margin-bottom: 5px; }
+        .subtitle { font-size: 13px; color: #666; margin-bottom: 20px; }
+        textarea { width: 100%; height: 90px; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        input[type="file"] { margin: 10px 0; width: 100%; }
+        button { background-color: #d9534f; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
+        button:hover { background-color: #c9302c; }
+        .location-box { background: #eef7ee; color: #2e7d32; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: bold; display: none; margin-top: 10px; }
+        .security-note { font-size: 11px; color: #777; margin-top: 15px; background: #fff8e1; padding: 8px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<!-- 1. தனியுரிமை பாதுகாப்பு குறித்த பாப்-அப் (Privacy Modal) -->
+<div id="privacyModal" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; padding: 15px;">
+    <div style="background: white; padding: 25px; border-radius: 12px; max-width: 400px; text-align: center; font-family: sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <h3 style="color: #d9534f; margin-bottom: 15px;">⚠️ பாதுகாப்பு மற்றும் தனியுரிமை<br>Privacy Notice</h3>
+        <p style="font-size: 13px; color: #333; line-height: 1.6; text-align: left; margin-bottom: 20px;">
+            <b>தமிழ்:</b> உங்களின் தனிப்பட்ட தரவுகள் (பெயர், தொலைபேசி எண், IP முகவரி) எதையும் நாங்கள் சேமிக்கவோ அல்லது யாரிடமும் பகிரவோ மாட்டோம். 100% பாதுகாப்பானது.<br><br>
+            <b>English:</b> Your personal data (name, phone number, IP address) will NOT be stored or shared. 100% secure and anonymous.
+        </p>
+        <button id="agreeBtn" style="background: #2e7d32; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;">
+            சம்மதிக்கிறேன் / Agree
+        </button>
+    </div>
+</div>
+
+<div class="card" id="mainAppCard">
+    <h2>🚨 ரகசியப் புகார் தளம்</h2>
+    <div class="subtitle">போதைப்பொருள் தடுப்பு - 100% பாதுகாப்பானது & அநாமதேயமானது</div>
+
+    <form id="reportForm">
+        <textarea id="reportDetails" placeholder="சம்பவம், நபர்கள் அல்லது இடம் பற்றிய விவரங்களை எழுதவும்..." required></textarea>
+        
+        <div style="font-size: 13px; font-weight: bold; text-align: left; margin-top: 10px;">புகைப்படம் அல்லது வீடியோ இணைக்கவும்:</div>
+        <input type="file" id="mediaUpload" accept="image/*,video/*">
+
+        <div id="locationStatus" class="location-box">📍 GPS இருப்பிடம் பெறப்பட்டது!</div>
+
+        <button type="submit" id="submitBtn">புகாரைச் சமர்ப்பி (Submit)</button>
+    </form>
+
+    <div class="security-note">
+        🔒 <b>பாதுகாப்பு உறுதிப்பாடு:</b> உங்கள் பெயர், மொபைல் எண் அல்லது IP அட்ரஸ் சேமிக்கப்படாது.
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBeTwiRPYZCMru4e2dDfey9_-7OUJ-fYTE",
+    authDomain: "people-safety-b341b.firebaseapp.com",
+    projectId: "people-safety-b341b",
+    storageBucket: "people-safety-b341b.firebasestorage.app",
+    messagingSenderId: "72711788900",
+    appId: "1:72711788900:web:3aa7c75ce29e8d0ad18271",
+    measurementId: "G-P5F626HXXJ"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let userLatitude = null;
+  let userLongitude = null;
+
+  // பக்கம் திறக்கும்போதே பாப்-அப் கட்டாயம் தெரியும்படி உறுதி செய்தல்
+  window.onload = function() {
+      document.getElementById('privacyModal').style.display = 'flex';
+  };
+
+  // சம்மதம் தந்த பின்னரே GPS லொகேஷன் கேட்கும் வசதி
+  document.getElementById('agreeBtn').addEventListener('click', () => {
+      document.getElementById('privacyModal').style.display = 'none';
+
+      if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+              (position) => {
+                  userLatitude = position.coords.latitude;
+                  userLongitude = position.coords.longitude;
+                  document.getElementById('locationStatus').style.display = 'block';
+              },
+              (error) => {
+                  document.body.innerHTML = `
+                      <div style="text-align:center; margin-top:100px; font-family:sans-serif; color:red; padding: 20px; background: white; max-width: 450px; margin: 50px auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                          <h2>❌ GPS Location Required<br>லொகேஷன் அனுமதி கட்டாயம்</h2>
+                          <p style="color: #333; font-size: 14px; line-height: 1.5;">இந்தச் செயலியைப் பயன்படுத்த GPS அனுமதி கட்டாயமாகும். அனுமதி வழங்கப்படாததால் செயலி செயல்படாது.</p>
+                      </div>
+                  `;
+              },
+              { enableHighAccuracy: true }
+          );
+      } else {
+          alert("உங்கள் பிரவுசர் GPS வசதியை ஆதரிக்கவில்லை.");
+      }
+  });
+
+  document.getElementById('reportForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submitBtn');
+      const details = document.getElementById('reportDetails').value;
+      const fileInput = document.getElementById('mediaUpload');
+      let mediaUrl = null;
+
+      submitBtn.innerText = "அனுப்பப்படுகிறது...";
+      submitBtn.disabled = true;
+
+      try {
+          if (fileInput.files.length > 0) {
+              const file = fileInput.files[0];
+              const formData = new FormData();
+              formData.append("file", file);
+              formData.append("upload_preset", "Safety_upload"); 
+
+              const cloudName = "hjvvckod"; 
+              const resourceType = file.type.startsWith("video") ? "video" : "image";
+
+              const response = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
+              const uploadRes = await fetch(response, {
+                  method: "POST",
+                  body: formData
+              });
+
+              const result = await uploadRes.json();
+              if (result.secure_url) {
+                  mediaUrl = result.secure_url;
+              } else {
+                  throw new Error(result.error?.message || "Media upload failed");
+              }
+          }
+
+          await db.collection("reports").add({
+              details: details,
+              mediaUrl: mediaUrl,
+              latitude: userLatitude,
+              longitude: userLongitude,
+...
