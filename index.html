@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-Drug Anonymous Alert System</title>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; text-align: center; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
+        .app-logo { width: 75px; height: 75px; border-radius: 15px; margin-bottom: 10px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        h2 { color: #d9534f; margin-bottom: 5px; }
+        .subtitle { font-size: 13px; color: #666; margin-bottom: 20px; }
+        textarea, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
+        textarea { height: 80px; }
+        input[type="file"] { margin: 10px 0; width: 100%; }
+        button { background-color: #d9534f; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
+        button:hover { background-color: #c9302c; }
+        .location-box { background: #eef7ee; color: #2e7d32; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: bold; display: none; margin-top: 10px; }
+        .security-note { font-size: 11px; color: #777; margin-top: 15px; background: #fff8e1; padding: 8px; border-radius: 4px; }
+        .voice-section { background: #f9f9f9; padding: 10px; border-radius: 6px; margin: 10px 0; border: 1px dashed #ccc; text-align: left; }
+        .form-label { text-align: left; font-size: 13px; font-weight: bold; color: #555; margin-top: 5px; display: block; }
+    </style>
+</head>
+<body>
+
+<!-- 1. லொகேஷன் அனுமதி பாப்-அப் -->
+<div id="privacyModal" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 99999; justify-content: center; align-items: center; padding: 15px;">
+    <div style="background: white; padding: 25px; border-radius: 12px; max-width: 400px; text-align: center; font-family: sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <h3 style="color: #d9534f; margin-bottom: 15px;">📍 லொகேஷன் அனுமதி கட்டாயம்<br>Location Permission Required</h3>
+        <p style="font-size: 13px; color: #333; line-height: 1.6; text-align: left; margin-bottom: 20px;">
+            <b>தமிழ்:</b> தவறு நடக்கும் சரியான இடத்தைக் கண்டறிய உங்கள் லொகேஷன் அனுமதி தேவை.<br><br>
+            <b>English:</b> Location permission is required to report accurately.
+        </p>
+        <button id="agreeBtn" style="background: #2e7d32; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;">
+            சம்மதிக்கிறேன் & லொகேஷன் தருகிறேன் / Allow Location
+        </button>
+    </div>
+</div>
+
+<!-- 2. நன்றி திரை -->
+<div id="thankYouScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f4f7f6; z-index: 88888; justify-content: center; align-items: center; padding: 15px;">
+    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 400px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+        <h2 style="color: #2e7d32; margin-bottom: 10px;">✅ நன்றி!</h2>
+        <h3 style="color: #333; margin-bottom: 15px; font-size: 18px;">உங்களின் ரகசியப் புகார் வெற்றிகரமாக அனுப்பப்பட்டது.</h3>
+        <div id="countdownTimer" style="font-size: 13px; background: #fff8e1; padding: 10px; border-radius: 6px; color: #d9534f; font-weight: bold;">
+            ⏳ 10 விநாடிகளில் தளம் மூடப்படும்...
+        </div>
+    </div>
+</div>
+
+<div class="card" id="mainAppCard">
+    <h2>🚨 ADA App System</h2>
+    <div class="subtitle">போதைப்பொருள் தடுப்பு - 100% பாதுகாப்பானது & அநாமதேயமானது</div>
+
+    <form id="reportForm">
+        <!-- State -->
+        <label class="form-label">மாநிலம் / State: *</label>
+        <select id="state" name="state" required onchange="onStateChange()">
+            <option value="">மாநிலத்தைத் தேர்ந்தெடுக்கவும்</option>
+            <option value="Tamil Nadu">Tamil Nadu</option>
+            <option value="Kerala">Kerala</option>
+            <option value="Karnataka">Karnataka</option>
+            <option value="Andhra Pradesh">Andhra Pradesh</option>
+            <option value="Maharashtra">Maharashtra</option>
+            <option value="Delhi">Delhi</option>
+        </select>
+
+        <!-- District -->
+        <label class="form-label">மாவட்டம் / District: *</label>
+        <select id="district" name="district" required disabled onchange="onDistrictChange()" style="background: #f9f9f9;">
+            <option value="">முதலில் மாநிலத்தைத் தேர்ந்தெடுக்கவும்</option>
+        </select>
+
+        <!-- Taluk -->
+        <label class="form-label">தாலுகா / Taluk: *</label>
+        <select id="taluk" name="taluk" required disabled onchange="onTalukChange()" style="background: #f9f9f9;">
+            <option value="">முதலில் மாவட்டத்தைத் தேர்ந்தெடுக்கவும்</option>
+        </select>
+
+        <!-- Area -->
+        <label class="form-label">இடம் / தெரு / Area: *</label>
+        <select id="area" name="area" required disabled style="background: #f9f9f9;">
+            <option value="">முதலில் தாலுகாவைத் தேர்ந்தெடுக்கவும்</option>
+        </select>
+
+        <textarea id="reportDetails" placeholder="சம்பவம் பற்றிய விவரங்களை எழுதவும் (Text Complaint)..."></textarea>
+        
+        <div class="voice-section">
+            <div style="font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555;">🎤 குரல் பதிவு மூலம் புகார் (Voice Note):</div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" id="recordBtn" style="background-color: #337ab7; padding: 10px; font-size: 14px; margin-top: 0; flex: 1;">🎙️ பேசு (Record)</button>
+                <button type="button" id="stopRecordBtn" style="background-color: #d9534f; padding: 10px; font-size: 14px; margin-top: 0; flex: 1; display: none;">⏹️ நிறுத்து (Stop)</button>
+            </div>
+            <audio id="audioPlayback" controls style="width: 100%; margin-top: 10px; display: none;"></audio>
+        </div>
+
+        <div style="font-size: 13px; font-weight: bold; text-align: left; margin-top: 5px;">புகைப்படம், வீடியோ இணைக்கவும் (Gallery/Files):</div>
+        <input type="file" id="mediaUpload" accept="image/*,video/*">
+
+        <div id="locationStatus" class="location-box">📍 லைவ் GPS இருப்பிடம் வெற்றிகரமாக இணைக்கப்பட்டது!</div>
+
+        <button type="submit" id="submitBtn">புகாரைச் சமர்ப்பி (Submit)</button>
+    </form>
+
+    <div class="security-note">
+        🔒 <b>பாதுகாப்பு உறுதிப்பாடு:</b> உங்கள் பெயர், மொபைல் எண் அல்லது IP அட்ரஸ் சேமிக்கப்படாது.
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+  const locationData = {
+      "Tamil Nadu": {
+          "Chennai": {
+              "Mylapore": ["North Mada Street", "South Mada Street", "Luz Church Road"],
+              "Egmore": ["Gandhi Irwin Road", "Poonamallee High Road"]
+          },
+          "Coimbatore": {
+              "Coimbatore North": ["RS Puram", "DB Road", "Cross Cut Road"],
+              "Pollachi": ["Mahalingapuram", "New Scheme Road"]
+          },
+          "Madurai": {
+              "Madurai North": ["Tallakulam", "K.Pudur"],
+              "Melur": ["Alagarkovil Road", "Bus Stand Area"]
+          }
+      },
+      "Kerala": {
+          "Thiruvananthapuram": {
+              "Technopark": ["Kazhakootam", "Karyavattom"],
+              "Statue": ["MG Road", "General Hospital Road"]
+          }
+      },
+      "Karnataka": {
+          "Bangalore Urban": {
+              "Bangalore South": ["Jayanagar 4th Block", "JP Nagar", "Basavanagudi"]
+          }
+      },
+      "Andhra Pradesh": {
+          "Visakhapatnam": {
+              "Visakhapatnam Urban": ["Beach Road", "Dwaraka Nagar", "MVP Colony"]
+          }
+      },
+      "Maharashtra": {
+          "Mumbai City": {
+              "Colaba": ["Colaba Causeway", "Taj Mahal Palace Area"]
+          }
+      },
+      "Delhi": {
+          "New Delhi": {
+              "Connaught Place": ["Block A", "Block B", "Janpath"]
+          }
+      }
+  };
+
+  function onStateChange() {
+      const state = document.getElementById("state").value;
+      const districtSelect = document.getElementById("district");
+      const talukSelect = document.getElementById("taluk");
+      const areaSelect = document.getElementById("area");
+
+      districtSelect.innerHTML = '<option value="">மாவட்டத்தைத் தேர்ந்தெடுக்கவும்</option>';
+      talukSelect.innerHTML = '<option value="">முதலில் மாவட்டத்தைத் தேர்ந்தெடுக்கவும்</option>';
+      areaSelect.innerHTML = '<option value="">முதலில் தாலுகாவைத் தேர்ந்தெடுக்கவும்</option>';
+      
+      districtSelect.disabled = !state;
+      talukSelect.disabled = true;
+      areaSelect.disabled = true;
+      
+      districtSelect.style.background = state ? "white" : "#f9f9f9";
+      talukSelect.style.background = "#f9f9f9";
+      areaSelect.style.background = "#f9f9f9";
+
+      if (state && locationData[state]) {
+          for (let dist in locationData[state]) {
+              districtSelect.innerHTML += `<option value="${dist}">${dist}</option>`;
+          }
+      }
+  }
+
+  function onDistrictChange() {
+      const state = document.getElementById("state").value;
+      const district = document.getElementById("district").value;
+      const talukSelect = document.getElementById("taluk");
+      const areaSelect = document.getElementById("area");
+
+      talukSelect.innerHTML = '<option value="">தாலுகாவைத் தேர்ந்தெடுக்கவும்</option>';
+      areaSelect.innerHTML = '<option value="">முதலில் தாலுகாவைத் தேர்ந்தெடுக்கவும்</option>';
+      
+      talukSelect.disabled = !district;
+      areaSelect.disabled = true;
+      talukSelect.style.background = district ? "white" : "#f9f9f9";
+      areaSelect.style.background = "#f9f9f9";
+
+      if (district && locationData[state][district]) {
+          for (let taluk in locationData[state][district]) {
+              talukSelect.innerHTML += `<option value="${taluk}">${taluk}</option>`;
+          }
+      }
+  }
+
+  function onTalukChange() {
+      const state = document.getElementById("state").value;
+      const district = document.getElementById("district").value;
+      const taluk = document.getElementById("taluk").value;
+      const areaSelect = document.getElementById("area");
+
+      areaSelect.innerHTML = '<option value="">இடம் / தெருவைத் தேர்ந்தெடுக்கவும்</option>';
+      areaSelect.disabled = !taluk;
+      areaSelect.style.background = taluk ? "white" : "#f9f9f9";
+
+      if (taluk && locationData[state][district][taluk]) {
+          locationData[state][district][taluk].forEach(area => {
+              areaSelect.innerHTML += `<option value="${area}">${area}</option>`;
+          });
+      }
+  }
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBeTwiRPYZCMru4e2dDfey9_-7OUJ-fYTE",
+    authDomain: "people-safety-b341b.firebaseapp.com",
+    projectId: "people-safety-b341b",
+    storageBucket: "people-safety-b341b.firebasestorage.app",
+    messagingSenderId: "72711788900",
+    appId: "1:72711788900:web:3aa7c75ce29e8d0ad18271",
+    measurementId: "G-P5F626HXXJ"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let userLatitude = 0.0;
+  let userLongitude = 0.0;
+  let recordedAudioBlob = null;
+  let mediaRecorder;
+  let audioChunks = [];
+
+  document.getElementById('agreeBtn').addEventListener('click', () => {
+      const modal = document.getElementById('privacyModal');
+      const statusBox = document.getElementById('locationStatus');
+
+      if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+              (position) => {
+                  userLatitude = position.coords.latitude;
+                  userLongitude = position.coords.longitude;
+                  modal.style.display = 'none';
+                  statusBox.style.display = 'block';
+              },
+              (error) => {
+                  modal.style.display = 'none';
+                  statusBox.style.display = 'block';
+              },
+              { enableHighAccuracy: true, timeout: 8000 }
+          );
+      } else {
+          modal.style.display = 'none';
+      }
+  });
+
+  const recordBtn = document.getElementById('recordBtn');
+  const stopRecordBtn = document.getElementById('stopRecordBtn');
+  const audioPlayback = document.getElementById('audioPlayback');
+
+  recordBtn.addEventListener('click', async () => {
+      try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+          mediaRecorder.onstop = () => {
+              recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+              audioPlayback.src = URL.createObjectURL(recordedAudioBlob);
+              audioPlayback.style.display = 'block';
+          };
+
+          mediaRecorder.start();
+          recordBtn.style.display = 'none';
+          stopRecordBtn.style.display = 'block';
+      } catch (err) {
+          alert("மைக்ரோஃபோன் அனுமதி கிடைக்கவில்லை.");
+      }
+  });
+
+  stopRecordBtn.addEventListener('click', () => {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+          mediaRecorder.stop();
+          stopRecordBtn.style.display = 'none';
+          recordBtn.style.display = 'block';
+          recordBtn.innerText = "🎙️ மீண்டும் பேசு (Re-record)";
+      }
+  });
+
+  document.getElementById('reportForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submitBtn');
+      const stateVal = document.getElementById('state').value;
+      const distVal = document.getElementById('district').value;
+      const talukVal = document.getElementById('taluk').value;
+      const areaVal = document.getElementById('area').value;
+      const locationName = `${stateVal} > ${distVal} > ${talukVal} > ${areaVal}`;
+
+      const details = document.getElementById('reportDetails').value;
+      const fileInput = document.getElementById('mediaUpload');
+      let mediaUrl = null;
+
+      submitBtn.innerText = "அனுப்பப்படுகிறது...";
+      submitBtn.disabled = true;
+
+      try {
+          let fileToUpload = null;
+          if (fileInput.files.length > 0) {
+              fileToUpload = fileInput.files[0];
+          } else if (recordedAudioBlob) {
+              fileToUpload = new File([recordedAudioBlob], "voice_complaint.webm", { type: 'audio/webm' });
+          }
+
+          if (fileToUpload) {
+              const formData = new FormData();
+              formData.append("file", fileToUpload);
+              formData.append("upload_preset", "Safety_upload"); 
+
+              const response = await fetch(`https://api.cloudinary.com/v1_1/hjvvckod/auto/upload`, {
+                  method: "POST",
+                  body: formData
+              });
+
+              const result = await response.json();
+              if (result.secure_url) {
+                  mediaUrl = result.secure_url;
+              }
+          }
+
+          await db.collection("reports").add({
+              locationName: locationName,
+              details: details || "Voice/Media Complaint",
+              mediaUrl: mediaUrl,
+              latitude: userLatitude,
+              longitude: userLongitude,
+              status: "URGENT",
+              timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          document.getElementById('mainAppCard').style.display = 'none';
+          document.getElementById('privacyModal').style.display = 'none';
+          document.getElementById('thankYouScreen').style.display = 'flex';
+
+          let timeLeft = 10;
+          const timerBox = document.getElementById('countdownTimer');
+          
+          const countdownInterval = setInterval(() => {
+              timeLeft--;
+              if (timeLeft > 0) {
+                  timerBox.innerHTML = `⏳ ${timeLeft} விநாடிகளில் தளம் மூடப்படும்...`;
+              } else {
+                  clearInterval(countdownInterval);
+                  setTimeout(() => { window.location.href = "about:blank"; }, 1000);
+              }
+          }, 1000);
+
+      } catch (error) {
+          alert("❌ பிழை ஏற்பட்டது: " + error.message);
+          submitBtn.innerText = "புகாரைச் சமர்ப்பி (Submit)";
+          submitBtn.disabled = false;
+      }
+  });
+</script>
+
+</body>
+</html>
