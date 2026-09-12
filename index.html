@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-Drug Anonymous Alert System - Tamil Nadu</title>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; text-align: center; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
+        h2 { color: #d9534f; margin-bottom: 5px; }
+        .subtitle { font-size: 13px; color: #666; margin-bottom: 20px; }
+        textarea, select, input[type="text"] { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
+        textarea { height: 80px; }
+        input[type="file"] { margin: 10px 0; width: 100%; }
+        button { background-color: #d9534f; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
+        button:hover { background-color: #c9302c; }
+        .location-box { background: #eef7ee; color: #2e7d32; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: bold; display: none; margin-top: 10px; }
+        .security-note { font-size: 11px; color: #777; margin-top: 15px; background: #fff8e1; padding: 8px; border-radius: 4px; }
+        .voice-section { background: #f9f9f9; padding: 10px; border-radius: 6px; margin: 10px 0; border: 1px dashed #ccc; text-align: left; }
+        .form-label { text-align: left; font-size: 13px; font-weight: bold; color: #555; margin-top: 5px; display: block; }
+    </style>
+</head>
+<body>
+
+<!-- லொகேஷன் அனுமதி பாப்-அப் -->
+<div id="privacyModal" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 99999; justify-content: center; align-items: center; padding: 15px;">
+    <div style="background: white; padding: 25px; border-radius: 12px; max-width: 400px; text-align: center; font-family: sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <h3 style="color: #d9534f; margin-bottom: 15px;">📍 லொகேஷன் அனுமதி கட்டாயம்<br>Location Permission Required</h3>
+        <p style="font-size: 13px; color: #333; line-height: 1.6; text-align: left; margin-bottom: 20px;">
+            <b>தமிழ்:</b> தவறு நடக்கும் சரியான இடத்தைக் கண்டறிய உங்கள் லொகேஷன் அனுமதி தேவை.<br><br>
+            <b>English:</b> Location permission is required to report accurately.
+        </p>
+        <button id="agreeBtn" style="background: #2e7d32; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;">
+            சம்மதிக்கிறேன் & லொகேஷன் தருகிறேன் / Allow Location
+        </button>
+    </div>
+</div>
+
+<!-- நன்றி திரை -->
+<div id="thankYouScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f4f7f6; z-index: 88888; justify-content: center; align-items: center; padding: 15px;">
+    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 400px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+        <h2 style="color: #2e7d32; margin-bottom: 10px;">✅ நன்றி!</h2>
+        <h3 style="color: #333; margin-bottom: 15px; font-size: 18px;">உங்களின் ரகசியப் புகார் வெற்றிகரமாக அனுப்பப்பட்டது.</h3>
+        <div id="countdownTimer" style="font-size: 13px; background: #fff8e1; padding: 10px; border-radius: 6px; color: #d9534f; font-weight: bold;">
+            ⏳ 10 விநாடிகளில் தளம் மூடப்படும்...
+        </div>
+    </div>
+</div>
+
+<div class="card" id="mainAppCard">
+    <h2>🚨 ADA App System</h2>
+    <div class="subtitle">தமிழ்நாடு காவல்துறை - போதைப்பொருள் தடுப்பு பிரிவு</div>
+
+    <form id="reportForm">
+        <label class="form-label">மாநிலம் / State: *</label>
+        <select id="state" name="state" required>
+            <option value="Tamil Nadu">Tamil Nadu</option>
+        </select>
+
+        <label class="form-label">மாவட்டம் / District: *</label>
+        <select id="district" name="district" required onchange="onDistrictChange()">
+            <option value="">மாவட்டத்தைத் தேர்ந்தெடுக்கவும்</option>
+        </select>
+
+        <label class="form-label">தாலுகா / Taluk: *</label>
+        <select id="taluk" name="taluk" required disabled style="background: #f9f9f9;">
+            <option value="">முதலில் மாவட்டத்தைத் தேர்ந்தெடுக்கவும்</option>
+        </select>
+
+        <!-- தெரு மற்றும் குறிப்பிட்ட இடம் (Manual Entry) -->
+        <label class="form-label">தெரு / பகுதி / Landmark: *</label>
+        <input type="text" id="streetArea" placeholder="உதாரணம்: காந்தி நகர் 2வது தெரு, பஸ் ஸ்டாண்ட் அருகில்" required>
+
+        <label class="form-label">சம்பவம் பற்றிய கூடுதல் விவரங்கள்:</label>
+        <textarea id="reportDetails" placeholder="கூடுதல் விவரங்களை இங்கு எழுதவும்..."></textarea>
+        
+        <div class="voice-section">
+            <div style="font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555;">🎤 குரல் பதிவு மூலம் புகார் (Voice Note):</div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" id="recordBtn" style="background-color: #337ab7; padding: 10px; font-size: 14px; margin-top: 0; flex: 1;">🎙️ பேசு (Record)</button>
+                <button type="button" id="stopRecordBtn" style="background-color: #d9534f; padding: 10px; font-size: 14px; margin-top: 0; flex: 1; display: none;">⏹️ நிறுத்து (Stop)</button>
+            </div>
+            <audio id="audioPlayback" controls style="width: 100%; margin-top: 10px; display: none;"></audio>
+        </div>
+
+        <div style="font-size: 13px; font-weight: bold; text-align: left; margin-top: 5px;">புகைப்படம், வீடியோ இணைக்கவும் (Gallery/Files):</div>
+        <input type="file" id="mediaUpload" accept="image/*,video/*">
+
+        <div id="locationStatus" class="location-box">📍 லைவ் GPS இருப்பிடம் வெற்றிகரமாக இணைக்கப்பட்டது!</div>
+
+        <button type="submit" id="submitBtn">புகாரைச் சமர்ப்பி (Submit)</button>
+    </form>
+
+    <div class="security-note">
+        🔒 <b>பாதுகாப்பு உறுதிப்பாடு:</b> உங்கள் பெயர், மொபைல் எண் அல்லது IP அட்ரஸ் சேமிக்கப்படாது.
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+  // தமிழ்நாட்டின் 38 மாவட்டங்கள் மற்றும் அனைத்து தாலுகாக்கள் பட்டியல்
+  const tnData = {
+      "சென்னை": ["அரும்பாக்கம்", "அயனாவரம்", "எழும்பூர்", "கிண்டி", "மாம்பலம்", "மயிலாப்பூர்", "மதுரவாயல்", "பெரம்பூர்", "புரசைவாக்கம்", "சோழிங்கநல்லூர்", "திருவெற்றியூர்", "தண்டையார்பேட்டை", "வேளச்சேரி", "அம்பத்தூர்", "மாதவரம்", "ஆலந்தூர்", "சென்னை வடக்கு", "சென்னை மத்திய", "சென்னை தெற்கு"],
+      "செங்கல்பட்டு": ["செங்கல்பட்டு", "திருப்போரூர்", "திருக்கழுக்குன்றம்", "மதுராந்தகம்", "செய்யூர்", "தாம்பரம்", "வண்டலூர்", "பல்லாவரம்"],
+      "காஞ்சிபுரம்": ["காஞ்சிபுரம்", "குன்றத்தூர்", "ஸ்ரீபெரும்புதூர்", "உத்திரமேரூர்", "வாலாஜாபாத்"],
+      "திருவள்ளூர்": ["திருவள்ளூர்", "ஊத்துக்கோட்டை", "பொன்னேரி", "கும்மிடிப்பூண்டி", "பூந்தமல்லி", "திருத்தணி", "பள்ளிப்பட்டு", "ஆவடி"],
+      "வேலூர்": ["வேலூர்", "அணைக்கட்டு", "குடியாத்தம்", "பேரணாம்பட்டு", "காட்பாடி", "கே.வி. குப்பம்"],
+      "ராணிப்பேட்டை": ["ராணிப்பேட்டை", "ஆற்காடு", "வாலாஜா", "அரக்கோணம்", "நெமிலி", "சோளிங்கர்", "கலவை"],
+      "திருப்பத்தூர்": ["திருப்பத்தூர்", "வாணியம்பாடி", "ஆம்பூர்", "நாட்டறம்பள்ளி"],
+      "திருவண்ணாமலை": ["திருவண்ணாமலை", "கீழ்பென்னாத்தூர்", "செங்கம்", "கலசப்பாக்கம்", "போளூர்", "சேத்துப்பட்டு", "ஆரணி", "வந்தவாசி", "தண்டராம்பட்டு", "வெம்பாக்கம்"],
+      "விழுப்புரம்": ["விழுப்புரம்", "விக்கிரவாண்டி", "செஞ்சி", "மேல்மலையனூர்", "திண்டிவனம்", "மரக்காணம்", "வானூர்", "கண்டாச்சிபுரம்", "திருவெண்ணைநல்லூர்"],
+      "கள்ளக்குறிச்சி": ["கள்ளக்குறிச்சி", "சின்னசேலம்", "சங்கராபுரம்", "திருக்கோவிலூர்", "உளுந்தூர்பேட்டை", "கல்வராயன்மலை"],
+      "கடலூர்": ["கடலூர்", "பண்ருட்டி", "குறிஞ்சிப்பாடி", "சிதம்பரம்", "காட்டுமன்னார்கோவில்", "புவனகிரி", "விருத்தாசலம்", "திட்டக்குடி", "வேப்பூர்"],
+      "தர்மபுரி": ["தர்மபுரி", "பென்னாகரம்", "பாலக்கோடு", "அரூர்", "பாப்பிரெட்டிப்பட்டி", "காரிமங்கலம்", "நல்லம்பள்ளி"],
+      "கிருஷ்ணகிரி": ["கிருஷ்ணகிரி", "பர்கூர்", "ஊத்தங்கரை", "போச்சம்பள்ளி", "தேன்கனிக்கோட்டை", "ஓசூர்", "சூளகிரி", "அஞ்செட்டி"],
+      "சேலம்": ["சேலம்", "ஏற்காடு", "ஆத்தூர்", "கெங்கவல்லி", "மேட்டூர்", "ஓமலூர்", "சங்ககிரி", "எடப்பாடி"],
+      "நாமக்கல்": ["நாமக்கல்", "சேந்தமங்கலம்", "ராசிபுரம்", "கொல்லிமலை", "திருச்செங்கோடு", "குமாரபாளையம்", "பரமத்தி வேலூர்", "மோகனூர்"],
+      "ஈரோடு": ["ஈரோடு", "பெருந்துறை", "பவானி", "அந்தியூர்", "கோபிச்செட்டிபாளையம்", "சத்தியமங்கலம்", "தாளவாடி", "நம்பியூர்"],
+      "திருப்பூர்": ["திருப்பூர் வடக்கு", "திருப்பூர் தெற்கு", "அவிநாசி", "பல்லடம்", "ஊத்துக்குளி", "காங்கேயம்", "தாராபுரம்", "உடுமலைப்பேட்டை", "மடத்துக்குளம்"],
+      "கோயம்புத்தூர்": ["கோயம்புத்தூர் வடக்கு", "கோயம்புத்தூர் தெற்கு", "பெரியநாயக்கன்பாளையம்", "சூலூர்", "அன்னூர்", "மேட்டுப்பாளையம்", "பொள்ளாச்சி", "கிணத்துக்கடவு", "வால்பாறை"],
+      "நீலகிரி": ["உதகமண்டலம்", "குன்னூர்", "கோத்தகிரி", "கூடலூர்", "பந்தலூர்", "குந்தா"],
+      "கரூர்": ["கரூர்", "அரவக்குறிச்சி", "குளித்தலை", "கிருஷ்ணராயபுரம்", "கடவூர்", "மண்மங்கலம்", "புகளூர்"],
+      "திருச்சிராப்பள்ளி": ["திருச்சிராப்பள்ளி மேற்கு", "திருச்சிராப்பள்ளி கிழக்கு", "ஸ்ரீரங்கம்", "மணப்பாறை", "லால்குடி", "மண்ணச்சநல்லூர்", "முசிறி", "துறையூர்", "தொட்டியம்", "திருவெறும்பூர்", "மருங்காபுரி"],
+      "பெரம்பலூர்": ["பெரம்பலூர்", "வேப்பந்தட்டை", "குன்னம்", "ஆலத்தூர்"],
+      "அரியலூர்": ["அரியலூர்", "உடையார்பாளையம்", "செந்துறை", "ஆண்டிமடம்"],
+      "தஞ்சாவூர்": ["தஞ்சாவூர்", "திருவையாறு", "பூதலூர்", "ஒரத்தநாடு", "பட்டுக்கோட்டை", "பேராவூரணி", "பாபநாசம்", "கும்பகோணம்", "திருவிடைமருதூர்"],
+      "திருவாரூர்": ["திருவாரூர்", "நன்னிலம்", "குடவாசல்", "வலங்கைமான்", "நீடாமங்கலம்", "மன்னார்குடி", "திருத்துறைப்பூண்டி", "முத்துப்பேட்டை"],
+      "நாகப்பட்டினம்": ["நாகப்பட்டினம்", "கீழ்வேளூர்", "வேதாரண்யம்", "திருமருகல்", "திருக்குவளை"],
+      "மயிலாடுதுறை": ["மயிலாடுதுறை", "சீர்காழி", "தரங்கம்பாடி", "குத்தாலம்"],
+      "புதுக்கோட்டை": ["புதுக்கோட்டை", "ஆலங்குடி", "கந்தர்வக்கோட்டை", "இலுப்பூர்", "குளத்தூர்", "திருமயம்", "பொன்னமராவதி", "அறந்தாங்கி", "ஆவுடையார்கோவில்", "மணமேல்குடி", "கறம்பக்குடி", "விராலிமலை"],
+      "சிவகங்கை": ["சிவகங்கை", "காரைக்குடி", "திருப்பத்தூர்", "தேவகோட்டை", "மானாமதுரை", "இளையான்குடி", "காளையார்கோவில்", "திருப்புவனம்"],
+      "மதுரை": ["மதுரை வடக்கு", "மதுரை தெற்கு", "மதுரை மேற்கு", "மதுரை கிழக்கு", "மேலூர்", "திருமங்கலம்", "உசிலம்பட்டி", "பேரையூர்", "வாடிப்பட்டி"],
+      "தேனி": ["தேனி", "பெரியகுளம்", "ஆண்டிப்பட்டி", "போடிநாயக்கனூர்", "உத்தமபாளையம்"],
+      "திண்டுக்கல்": ["திண்டுக்கல் கிழக்கு", "திண்டுக்கல் மேற்கு", "ஆத்தூர்", "நிலக்கோட்டை", "வேடசந்தூர்", "பழனி", "ஒட்டன்சத்திரம்", "கொடைக்கானல்", "நத்தம்"],
+      "இராமநாதபுரம்": ["இராமநாதபுரம்", "ராமேஸ்வரம்", "கீழக்கரை", "திருவாடானை", "பரமக்குடி", "கமுதி", "முதுகுளத்தூர்", "கடலாடி", "ஆர்.எஸ்.மங்கலம்"],
+      "விருதுநகர்": ["விருதுநகர்", "அருப்புக்கோட்டை", "காரியாபட்டி", "திருச்சுழி", "சிவகாசி", "சாத்தூர்", "வெம்பக்கோட்டை", "ஸ்ரீவில்லிபுத்தூர்", "வத்திராயிருப்பு", "ராஜபாளையம்"],
+      "தூத்துக்குடி": ["தூத்துக்குடி", "திருச்செந்தூர்", "ஸ்ரீவைகுண்டம்", "ஏரல்", "சாத்தான்குளம்", "விளாத்திகுளம்", "கோவில்பட்டி", "ஒட்டப்பிடாரம்", "எட்டயபுரம்", "கயத்தாறு"],
+      "திருநெல்வேலி": ["திருநெல்வேலி", "பாளையங்கோட்டை", "சேரன்மகாதேவி", "அம்பாசமுத்திரம்", "நாங்குநேரி", "ராதாபுரம்", "மானூர்", "திசையன்விளை"],
+      "தென்காசி": ["தென்காசி", "சங்கரன்கோவில்", "திருவேங்கடம்", "ஆலங்குளம்", "கடையநல்லூர்", "செங்கோட்டை", "வாசுதேவநல்லூர்", "சிவகிரி", "வீரகேரளம்புதூர்"],
+      "கன்னியாகுமரி": ["அகஸ்தீஸ்வரம்", "தோவாளை", "கல்குளம்", "விளவங்கோடு", "கிள்ளியூர்"]
+  };
+
+  window.onload = function() {
+      const districtSelect = document.getElementById("district");
+      for (let dist in tnData) {
+          districtSelect.innerHTML += `<option value="${dist}">${dist}</option>`;
+      }
+  };
+
+  function onDistrictChange() {
+      const district = document.getElementById("district").value;
+      const talukSelect = document.getElementById("taluk");
+
+      talukSelect.innerHTML = '<option value="">தாலுகாவைத் தேர்ந்தெடுக்கவும்</option>';
+      talukSelect.disabled = !district;
+      talukSelect.style.background = district ? "white" : "#f9f9f9";
+
+      if (district && tnData[district]) {
+          tnData[district].forEach(taluk => {
+              talukSelect.innerHTML += `<option value="${taluk}">${taluk}</option>`;
+          });
+      }
+  }
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBeTwiRPYZCMru4e2dDfey9_-7OUJ-fYTE",
+    authDomain: "people-safety-b341b.firebaseapp.com",
+    projectId: "people-safety-b341b",
+    storageBucket: "people-safety-b341b.firebasestorage.app",
+    messagingSenderId: "72711788900",
+    appId: "1:72711788900:web:3aa7c75ce29e8d0ad18271",
+    measurementId: "G-P5F626HXXJ"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let userLatitude = 0.0;
+  let userLongitude = 0.0;
+  let recordedAudioBlob = null;
+  let mediaRecorder;
+  let audioChunks = [];
+
+  document.getElementById('agreeBtn').addEventListener('click', () => {
+      const modal = document.getElementById('privacyModal');
+      const statusBox = document.getElementById('locationStatus');
+
+      if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+              (position) => {
+                  userLatitude = position.coords.latitude;
+                  userLongitude = position.coords.longitude;
+                  modal.style.display = 'none';
+                  statusBox.style.display = 'block';
+              },
+              (error) => {
+                  modal.style.display = 'none';
+                  statusBox.style.display = 'block';
+              },
+              { enableHighAccuracy: true, timeout: 8000 }
+          );
+      } else {
+          modal.style.display = 'none';
+      }
+  });
+
+  const recordBtn = document.getElementById('recordBtn');
+  const stopRecordBtn = document.getElementById('stopRecordBtn');
+  const audioPlayback = document.getElementById('audioPlayback');
+
+  recordBtn.addEventListener('click', async () => {
+      try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+          mediaRecorder.onstop = () => {
+              recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+              audioPlayback.src = URL.createObjectURL(recordedAudioBlob);
+              audioPlayback.style.display = 'block';
+          };
+
+          mediaRecorder.start();
+          recordBtn.style.display = 'none';
+          stopRecordBtn.style.display = 'block';
+      } catch (err) {
+          alert("மைக்ரோஃபோன் அனுமதி கிடைக்கவில்லை.");
+      }
+  });
+
+  stopRecordBtn.addEventListener('click', () => {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+          mediaRecorder.stop();
+          stopRecordBtn.style.display = 'none';
+          recordBtn.style.display = 'block';
+          recordBtn.innerText = "🎙️ மீண்டும் பேசு (Re-record)";
+      }
+  });
+
+  document.getElementById('reportForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submitBtn');
+      const stateVal = document.getElementById('state').value;
+      const distVal = document.getElementById('district').value;
+      const talukVal = document.getElementById('taluk').value;
+      const streetVal = document.getElementById('streetArea').value;
+      const locationName = `${stateVal} > ${distVal} தாலுகா > இடம்: ${streetVal}`;
+
+      const details = document.getElementById('reportDetails').value;
+      const fileInput = document.getElementById('mediaUpload');
+      let mediaUrl = null;
+
+      submitBtn.innerText = "அனுப்பப்படுகிறது...";
+      submitBtn.disabled = true;
+
+      try {
+          let fileToUpload = null;
+          if (fileInput.files.length > 0) {
+              fileToUpload = fileInput.files[0];
+          } else if (recordedAudioBlob) {
+              fileToUpload = new File([recordedAudioBlob], "voice_complaint.webm", { type: 'audio/webm' });
+          }
+
+          if (fileToUpload) {
+              const formData = new FormData();
+              formData.append("file", fileToUpload);
+              formData.append("upload_preset", "Safety_upload"); 
+
+              const response = await fetch(`https://api.cloudinary.com/v1_1/hjvvckod/auto/upload`, {
+                  method: "POST",
+                  body: formData
+              });
+
+              const result = await response.json();
+              if (result.secure_url) {
+                  mediaUrl = result.secure_url;
+              }
+          }
+
+          await db.collection("reports").add({
+              locationName: locationName,
+              details: details || "Voice/Media Complaint",
+              mediaUrl: mediaUrl,
+              latitude: userLatitude,
+              longitude: userLongitude,
+              status: "URGENT",
+              timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          document.getElementById('mainAppCard').style.display = 'none';
+          document.getElementById('privacyModal').style.display = 'none';
+          document.getElementById('thankYouScreen').style.display = 'flex';
+
+          let timeLeft = 10;
+          const timerBox = document.getElementById('countdownTimer');
+          
+          const countdownInterval = setInterval(() => {
+              timeLeft--;
+              if (timeLeft > 0) {
+                  timerBox.innerHTML = `⏳ ${timeLeft} விநாடிகளில் தளம் மூடப்படும்...`;
+              } else {
+                  clearInterval(countdownInterval);
+                  setTimeout(() => { window.location.href = "about:blank"; }, 1000);
+              }
+          }, 1000);
+
+      } catch (error) {
+          alert("❌ பிழை ஏற்பட்டது: " + error.message);
+          submitBtn.innerText = "புகாரைச் சமர்ப்பி (Submit)";
+          submitBtn.disabled = false;
+      }
+  });
+</script>
+
+</body>
+</html>
