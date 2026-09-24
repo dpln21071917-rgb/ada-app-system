@@ -1,0 +1,21 @@
+{
+  "short_name": "ADA App",
+  "name": "ADA - Anti-Drug Anonymous",
+  "icons": [
+    {
+      "src": "icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./",
+  "background_color": "#ffffff",
+  "theme_color": "#b91c1c",
+  "display": "standalone"
+}
