@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Police Admin Panel - Anti Drug Anonymous</title>
+    <link rel="icon" href="icon-192.png" type="image/png">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; }
+        .admin-container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .login-card { max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #d9534f; margin-bottom: 5px; text-align: center; font-size: 22px; }
+        .subtitle { font-size: 13px; color: #666; margin-bottom: 20px; text-align: center; }
+        select, input[type="text"], input[type="password"], textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
+        button { background-color: #d9534f; color: white; border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
+        button:hover { background-color: #c9302c; }
+        .form-label { text-align: left; font-size: 13px; font-weight: bold; color: #555; margin-top: 5px; display: block; }
+        
+        .admin-header-bar { background: #d9534f; color: white; padding: 15px 20px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .reports-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; margin-top: 15px; }
+        .report-card { background: #fff; border: 1px solid #ddd; border-left: 5px solid #d9534f; border-radius: 8px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .report-card-header { display: flex; justify-content: space-between; font-size: 12px; color: #777; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .report-location { font-weight: bold; color: #333; font-size: 13px; margin-bottom: 6px; }
+        .report-details { font-size: 13px; color: #555; background: #f9f9f9; padding: 8px; border-radius: 4px; margin-bottom: 10px; }
+        .status-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 10px; }
+        .report-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .action-btn { padding: 8px; font-size: 11px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; text-align: center; text-decoration: none; display: inline-block; color: white; }
+        .btn-image { background-color: #337ab7; }
+        .btn-img-loc { background-color: #0275d8; }
+        .btn-video { background-color: #8e44ad; }
+        .btn-vid-loc { background-color: #6c3483; }
+        .btn-voice { background-color: #2e7d32; }
+        .btn-aud-loc { background-color: #1b5e20; }
+        .btn-map { background-color: #f0ad4e; grid-column: span 2; }
+        .no-data { text-align: center; color: #777; padding: 40px; grid-column: 1 / -1; font-size: 15px; }
+        .badge { background: #d9534f; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+        .badge-true { background: #2e7d32; }
+        .badge-fake { background: #c9302c; }
+        .badge-suspicious { background: #f0ad4e; color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="login-card" id="adminLoginCard">
+    <h2>👮 Police Command Panel</h2>
+    <div class="subtitle">தலைமையகம், மாவட்ட அல்லது காவல் நிலைய லாகின்</div>
+    
+    <label class="form-label">பிரிவு / Section: *</label>
+    <select id="loginType" onchange="onLoginTypeChange()" style="margin-bottom: 12px;">
+        <option value="HQ">தலைமையகம் / Head Quarters (All Districts)</option>
+        <option value="District">மாவட்ட கட்டுப்பாட்டு அறை / District Control Room</option>
+        <option value="Station">காவல் நிலையம் / Police Station Jurisdiction</option>
+    </select>
+
+    <div id="districtSelectWrapper" style="display: none;">
+        <label class="form-label">மாவட்டம் / Select District: *</label>
+        <select id="loginDistrict" onchange="onDistrictChange()" style="margin-bottom: 12px;">
+            <option value="">மாவட்டத்தைத் தேர்ந்தெடுக்கவும்</option>
+        </select>
+    </div>
+
+    <div id="stationSelectWrapper" style="display: none;">
+        <label class="form-label">காவல் நிலையம் / Select Police Station: *</label>
+        <select id="loginStation" style="margin-bottom: 12px;">
+            <option value="">காவல் நிலையத்தைத் தேர்ந்தெடுக்கவும்</option>
+        </select>
+    </div>
+
+    <label class="form-label">ரகசிய கடவுச்சொல் / Password: *</label>
+    <input type="password" id="loginPassword" placeholder="கடவுச்சொல்லை உள்ளிடவும்..." style="margin-bottom: 15px;">
+
+    <button type="button" onclick="verifyUnifiedAdminLogin()">உள்நுழை (Login)</button>
+    <div style="margin-top: 15px; text-align: center;">
+        <a href="index.html" style="font-size: 12px; color: #555; text-decoration: none;">← பொதுப் புகார் படிவத்திற்குச் செல்</a>
+    </div>
+</div>
+
+<div class="admin-container" id="adminContainer" style="display: none;">
+    <div class="admin-header-bar">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span id="adminPanelTitle">🚨 Police Admin Panel</span>
+        </div>
+        <span id="totalReportsCount" style="background: white; color: #d9534f; padding: 5px 12px; border-radius: 4px; font-size: 14px; font-weight: bold;">மொத்த புகார்கள்: 0</span>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+        <div style="font-size: 13px; color: #666;" id="adminSubTitle">புகார்களின் நிலை.</div>
+        <div>
+            <button onclick="monitorAdminReportsRealtime()" style="background: #2e7d32; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; width: auto; margin-top: 0; cursor: pointer;">🔄 புதுப்பி (Refresh)</button>
+            <a href="admine.html" style="background: #d9534f; color: white; padding: 7px 12px; border-radius: 4px; font-size: 12px; text-decoration: none; display: inline-block; margin-left: 5px;">🚪 வெளியேறு (Logout)</a>
+        </div>
+    </div>
+
+    <div class="reports-grid" id="reportsGridContainer">
+        <div class="no-data">தரவுகள் ஏற்றப்படுகின்றன...</div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+    const districtEnglishMap = {
+        "சென்னை": "Chennai", "செங்கல்பட்டு": "Chengalpattu", "காஞ்சிபுரம்": "Kanchipuram",
+        "திருவள்ளூர்": "Thiruvallur", "வேலூர்": "Vellore", "ராணிப்பேட்டை": "Ranipet",
+        "திருப்பத்தூர்": "Tirupattur", "திருவண்ணாமலை": "Thiruvannamalai", "விழுப்புரம்": "Villupuram",
+        "கள்ளக்குறிச்சி": "Kallakurichi", "கடலூர்": "Cuddalore", "தர்மபுரி": "Dharmapuri",
+        "கிருஷ்ணகிரி": "Krishnagiri", "சேலம்": "Salem", "நாமக்கல்": "Namakkal",
+        "ஈரோடு": "Erode", "திருப்பூர்": "Tiruppur", "கோயம்புத்தூர்": "Coimbatore",
+        "நீலகிரி": "Nilgiris", "கரூர்": "Karur", "திருச்சிராப்பள்ளி": "Trichy",
+        "பெரம்பலூர்": "Perambalur", "அரியலூர்": "Ariyalur", "தஞ்சாவூர்": "Thanjavur",
+        "திருவாரூர்": "Thiruvarur", "நாகப்பட்டினம்": "Nagapattinam", "மயிலாடுதுறை": "Mayiladuthurai",
+        "புதுக்கோட்டை": "Pudukottai", "சிவகங்கை": "Sivagangai", "மதுரை": "Madurai",
+        "தேனி": "Theni", "திண்டுக்கல்": "Dindigul", "இராமநாதபுரம்": "Ramanathapuram",
+        "விருதுநகர்": "Virudhunagar", "தூத்துக்குடி": "Thoothukudi", "திருநெல்வேலி": "Tirunelveli",
+        "தென்காசி": "Tenkasi", "கன்னியாகுமரி": "Kanyakumari"
+    };
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBeTwiRPYZCMru4e2dDfey9_-7OUJ-fYTE",
+        authDomain: "people-safety-b341b.firebaseapp.com",
+        projectId: "people-safety-b341b",
+        storageBucket: "people-safety-b341b.firebasestorage.app",
+        messagingSenderId: "72711788900",
+        appId: "1:72711788900:web:3aa7c75ce29e8d0ad18271",
+        measurementId: "G-P5F626HXXJ"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let currentLoginRole = "";
+    let currentLoginType = ""; 
+    let selectedDistrictEng = "";
+
+    window.onload = function() {
+        const loginDistrictSelect = document.getElementById("loginDistrict");
+        for (let dist in districtEnglishMap) {
+            loginDistrictSelect.innerHTML += `<option value="${dist}">${dist} Control Room</option>`;
+        }
+    };
+
+    function onLoginTypeChange() {
+        const type = document.getElementById('loginType').value;
+        const distWrapper = document.getElementById('districtSelectWrapper');
+        const stationWrapper = document.getElementById('stationSelectWrapper');
+
+        if (type === 'HQ') {
+            distWrapper.style.display = 'none';
+            stationWrapper.style.display = 'none';
+        } else if (type === 'District') {
+            distWrapper.style.display = 'block';
+            stationWrapper.style.display = 'none';
+        } else if (type === 'Station') {
+            distWrapper.style.display = 'block';
+            stationWrapper.style.display = 'block';
+        }
+    }
+
+    async function onDistrictChange() {
+        const selectedDistTa = document.getElementById('loginDistrict').value;
+        const stationSelect = document.getElementById('loginStation');
+        stationSelect.innerHTML = `<option value="">காவல் நிலையத்தைத் தேர்ந்தெடுக்கவும்...</option>`;
+
+        if (!selectedDistTa) return;
+        let distEng = districtEnglishMap[selectedDistTa] || selectedDistTa;
+
+        try {
+            let docSnap = await db.collection("admin_passwords").doc(distEng).get();
+            if (!docSnap.exists) {
+                docSnap = await db.collection("admin_passwords").doc(distEng.toLowerCase()).get();
+            }
+
+            if (docSnap.exists && docSnap.data().stations) {
+                let stations = docSnap.data().stations;
+                stations.forEach(station => {
+                    stationSelect.innerHTML += `<option value="${station}">${station}</option>`;
+                });
+            }
+        } catch (e) {
+            console.log("Station load error:", e);
+        }
+    }
+
+    // 🔥 எழுத்துப்பிழைகளைக் (Spelling Mistakes) கண்டறியும் Fuzzy / Levenshtein Distance Algorithm
+    function getLevenshteinDistance(a, b) {
+        if (a.length === 0) return b.length;
+        if (b.length === 0) return a.length;
+        const matrix = [];
+        for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
+        for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
+        for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                    matrix[i][j] = Math.min(
+                        matrix[i - 1][j - 1] + 1,
+                        Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
+                    );
+                }
+            }
+        }
+        return matrix[b.length][a.length];
+    }
+
+    // 🔊 ஒலியமைப்பைச் (Pronunciation/Phonetics) சரிபார்க்கும் ஃபங்ஷன்
+    function isPhoneticallySimilar(str1, str2) {
+        let clean1 = str1.toLowerCase().replace(/[^a-z0-9]/g, '');
+        let clean2 = str2.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        if (clean1 === clean2) return true;
+        
+        let dist = getLevenshteinDistance(clean1, clean2);
+        // 1 முதல் 3 எழுத்துகள் பிழையாக இருந்தாலும் உச்சரிப்பு ஒத்திருந்தால் அனுமதிக்கும்
+        if (dist <= 3) return true;
+
+        // Phonetic vowel & consonant replacement match
+        let norm1 = clean1.replace(/[aeiou]/g, 'a').replace(/[ckq]/g, 'k').replace(/[phf]/g, 'f').replace(/[vz]/g, 'w');
+        let norm2 = clean2.replace(/[aeiou]/g, 'a').replace(/[ckq]/g, 'k').replace(/[phf]/g, 'f').replace(/[vz]/g, 'w');
+        
+        return norm1 === norm2 || getLevenshteinDistance(norm1, norm2) <= 2;
+    }
+
+    async function checkPasswordAuth(districtEng, inputPassword) {
+        // தலைமையக முதன்மை ரகசிய கடவுச்சொல்
+        if (inputPassword === "tnpolice@2026") return true;
+
+        let cleanInput = inputPassword.trim().toLowerCase();
+        let expectedDefaultPwd = (districtEng + "@2026").toLowerCase();
+
+        // 1. நேரடி ஒப்பிடு அல்லது உச்சரிப்பு/எழுத்துப்பிழை பொருத்தம்
+        if (isPhoneticallySimilar(cleanInput, expectedDefaultPwd)) return true;
+
+        try {
+            // 2. டேட்டாபேஸில் சேமிக்கப்பட்டுள்ள கடவுச்சொல்லுடன் சரிபார்த்தல்
+            let docSnap = await db.collection("admin_passwords").doc(districtEng).get();
+            if (!docSnap.exists) {
+                docSnap = await db.collection("admin_passwords").doc(districtEng.toLowerCase()).get();
+            }
+
+            if (docSnap.exists && docSnap.data().password) {
+                let savedPwd = docSnap.data().password.trim().toLowerCase();
+                if (cleanInput === savedPwd || isPhoneticallySimilar(cleanInput, savedPwd)) {
+                    return true;
+                }
+            }
+        } catch (err) {
+            console.log("Auth Fetch Error:", err);
+        }
+
+        return false;
+    }
+
+    async function verifyUnifiedAdminLogin() {
+        const loginType = document.getElementById('loginType').value;
+        const password = document.getElementById('loginPassword').value.trim();
+
+        if (!password) {
+            alert("⚠️ தயவுசெய்து கடவுச்சொல்லை உள்ளிடவும்!");
+            return;
+        }
+
+        if (loginType === 'HQ') {
+            if (password === "tnpolice@2026" || isPhoneticallySimilar(password, "tnpolice@2026")) {
+                currentLoginRole = "HQ";
+                currentLoginType = "HQ";
+                initDashboard("🚨 தமிழ்நாடு காவல்துறை - தலைமையகம் (HQ)", "மாநிலம் முழுவதிலும் இருந்து பெறப்பட்ட அனைத்து மாவட்டப் புகார்களும் காட்டப்படுகின்றன.");
+            } else {
+                alert("❌ தவறான தலைமையக கடவுச்சொல்!");
+            }
+        } else if (loginType === 'District') {
+            const selectedDistTa = document.getElementById('loginDistrict').value;
+            if (!selectedDistTa) { alert("⚠️ தயவுசெய்து மாவட்டத்தைத் தேர்ந்தெடுக்கவும்!"); return; }
+
+            let distEng = districtEnglishMap[selectedDistTa] || selectedDistTa;
+            let success = await checkPasswordAuth(distEng, password);
+
+            if (success) {
+                currentLoginRole = selectedDistTa;
+                selectedDistrictEng = distEng;
+                currentLoginType = "District";
+                initDashboard(`🚨 ${selectedDistTa} மாவட்ட கட்டுப்பாட்டு அறை`, `${selectedDistTa} மாவட்ட எல்லைக்குட்பட்ட புகார்கள் மட்டும் காட்டப்படுகின்றன.`);
+            } else {
+                alert("❌ தவறான கடவுச்சொல்! (Incorrect Password)");
+            }
+        } else if (loginType === 'Station') {
+            const selectedDistTa = document.getElementById('loginDistrict').value;
+            const selectedStation = document.getElementById('loginStation').value;
+            if (!selectedDistTa || !selectedStation) { alert("⚠️ மாவட்டம் மற்றும் காவல் நிலையத்தை சரியாகத் தேர்ந்தெடுக்கவும்!"); return; }
+
+            let distEng = districtEnglishMap[selectedDistTa] || selectedDistTa;
+            let success = await checkPasswordAuth(distEng, password);
+
+            if (success) {
+                currentLoginRole = selectedStation;
+                selectedDistrictEng = distEng;
+                currentLoginType = "Station";
+                initDashboard(`🚨 ${selectedStation} காவல் நிலையம்`, `${selectedStation} எல்லைக்குட்பட்ட புகார்கள் மட்டும் காட்டப்படுகின்றன.`);
+            } else {
+                alert("❌ தவறான கடவுச்சொல்! (Incorrect Password)");
+            }
+        }
+    }
+
+    function initDashboard(titleText, subtitleText) {
+        document.getElementById('adminLoginCard').style.display = 'none';
+        document.getElementById('adminContainer').style.display = 'block';
+        document.getElementById('adminPanelTitle').innerText = titleText;
+        document.getElementById('adminSubTitle').innerText = subtitleText;
+        monitorAdminReportsRealtime();
+    }
+
+    function openMediaWindow(dataUrl, type) {
+        const win = window.open("", "_blank");
+        if (type === 'image') {
+            win.document.write(`<img src="${dataUrl}" style="max-width:100%; height:auto;">`);
+        } else if (type === 'video') {
+            win.document.write(`<video controls src="${dataUrl}" style="max-width:100%; height:auto;" autoplay></video>`);
+        } else if (type === 'audio') {
+            win.document.write(`<audio controls src="${dataUrl}" autoplay></audio>`);
+        }
+    }
+
+    function monitorAdminReportsRealtime() {
+        const gridContainer = document.getElementById('reportsGridContainer');
+        const totalCountBadge = document.getElementById('totalReportsCount');
+        
+        db.collection("reports").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+            let filteredDocs = [];
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                
+                let docDistrict = (data.district || "").trim().toLowerCase();
+                let docStation = (data.policeStation || data.talukStation || "").trim().toLowerCase();
+                let docLoc = (data.locationName || "").toLowerCase();
+
+                if (currentLoginType === "HQ") {
+                    filteredDocs.push({ id: doc.id, ...data });
+                } 
+                else if (currentLoginType === "District") {
+                    let targetDistEng = (selectedDistrictEng || "").trim().toLowerCase();
+                    let targetDistTa = (currentLoginRole || "").trim().toLowerCase();
+                    
+                    if (docDistrict === targetDistEng || docDistrict === targetDistTa || docLoc.includes(targetDistEng)) {
+                        filteredDocs.push({ id: doc.id, ...data });
+                    }
+                } 
+                else if (currentLoginType === "Station") {
+                    let targetStation = (currentLoginRole || "").trim().toLowerCase();
+                    
+                    if (docStation === targetStation || docStation.includes(targetStation) || docLoc.includes(targetStation)) {
+                        filteredDocs.push({ id: doc.id, ...data });
+                    }
+                }
+            });
+
+            totalCountBadge.innerText = `மொத்த புகார்கள்: ${filteredDocs.length}`;
+
+            if (filteredDocs.length === 0) {
+                gridContainer.innerHTML = `<div class="no-data">புதிய புகார்கள் எதுவும் இல்லை.</div>`;
+                return;
+            }
+
+            gridContainer.innerHTML = "";
+            filteredDocs.forEach(data => {
+                const docId = data.id;
+                let dateStr = "N/A";
+                if (data.timestamp && data.timestamp.toDate) {
+                    dateStr = data.timestamp.toDate().toLocaleString('ta-IN');
+                }
+
+                let currentStatus = data.complaintStatus || "Pending";
+                let accuracyScore = data.accuracyPercentage || 50;
+                let aiStatusText = data.aiAnalysis || "Suspicious / பரிசீலனையில்";
+                let aiReasonText = data.analysisReason || "ஆதாரங்கள் அடிப்படையில் கணக்கிடப்பட்டது";
+
+                let badgeColorClass = accuracyScore >= 70 ? 'badge-true' : (accuracyScore >= 35 ? 'badge-suspicious' : 'badge-fake');
+
+                let aiCardHtml = `
+                    <div class="ai-analysis-box" style="background: #f0f4f8; border-left: 4px solid #337ab7; padding: 10px; font-size: 12px; margin-bottom: 10px; border-radius: 6px; color: #333;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <b>🤖 AI உண்மைத் தன்மை:</b>
+                            <span class="badge ${badgeColorClass}" style="font-size: 11px; padding: 3px 8px;">${accuracyScore}% - ${aiStatusText}</span>
+                        </div>
+                        <div style="font-size: 11px; color: #555; margin-top: 4px;">
+                            <b>காரணம்:</b> ${aiReasonText}
+                        </div>
+                    </div>
+                `; 
+                
+                const imgLat = data.imageLocationLat || data.latitude;
+                const imgLon = data.imageLocationLon || data.longitude;
+                const vidLat = data.videoLocationLat || data.latitude;
+                const vidLon = data.videoLocationLon || data.longitude;
+                const audLat = data.audioLocationLat || data.latitude;
+                const audLon = data.audioLocationLon || data.longitude;
+
+                const cardHtml = `
+                    <div class="report-card">
+                        <div class="report-card-header">
+                            <span class="badge badge-true">ID: ${data.trackingId || 'N/A'}</span>
+                            <span style="font-size:11px;">${dateStr}</span>
+                        </div>
+                        <div class="report-location">📍 மாவட்டம்: ${data.district || 'N/A'} | ஸ்டேஷன்: ${data.policeStation || data.talukStation || 'N/A'}</div>
+                        <div class="report-details" style="font-size: 13px; color: #555; background: #f9f9f9; padding: 8px; border-radius: 4px; margin-bottom: 10px;"><b>விவரம்:</b> ${data.details || 'N/A'}</div>
+                        
+                        ${aiCardHtml}  
+                        
+                        <div class="status-box">
+                            <b>📌 புகாரின் நிலை (Status Update):</b><br>
+                            <select id="status_${docId}" style="margin: 5px 0; font-size: 12px; padding: 5px;">
+                                <option value="Pending" ${currentStatus==='Pending'?'selected':''}>Pending (நிலுவையில்)</option>
+                                <option value="In Progress" ${currentStatus==='In Progress'?'selected':''}>In Progress (விசாரணையில்)</option>
+                                <option value="Action Taken" ${currentStatus==='Action Taken'?'selected':''}>Action Taken (நடவடிக்கை எடுக்கப்பட்டது)</option>
+                                <option value="Resolved" ${currentStatus==='Resolved'?'selected':''}>Resolved / Closed (முடிவுற்றது)</option>
+                            </select>
+                            <textarea id="note_${docId}" placeholder="காவல்துறை அதிகாரி குறிப்பு..." style="font-size:12px; height:45px; margin-top:5px;">${data.officerNote || ''}</textarea>
+                            <button onclick="updateReportStatus('${docId}')" style="background:#2e7d32; padding:6px; font-size:12px; margin-top:5px; width:auto;">💾 சேமி</button>
+                        </div>
+
+                        <div class="report-actions">
+                            ${data.imageUrl ? `<button onclick="openMediaWindow('${data.imageUrl}', 'image')" class="action-btn btn-image">🔍 படம்</button>` : ''}
+                            ${data.imageUrl && imgLat ? `<a href="https://www.google.com/maps?q=${imgLat},${imgLon}" target="_blank" class="action-btn btn-img-loc">📍 பட லொகேஷன்</a>` : ''}
+                            
+                            ${data.videoUrl ? `<button onclick="openMediaWindow('${data.videoUrl}', 'video')" class="action-btn btn-video">🎥 வீடியோ</button>` : ''}
+                            ${data.videoUrl && vidLat ? `<a href="https://www.google.com/maps?q=${vidLat},${vidLon}" target="_blank" class="action-btn btn-vid-loc">📍 வீடியோ லொகேஷன்</a>` : ''}
+                            
+                            ${data.audioUrl ? `<button onclick="openMediaWindow('${data.audioUrl}', 'audio')" class="action-btn btn-voice">🔊 குரல்</button>` : ''}
+                            ${data.audioUrl && audLat ? `<a href="https://www.google.com/maps?q=${audLat},${audLon}" target="_blank" class="action-btn btn-aud-loc">📍 குரல் லொகேஷன்</a>` : ''}
+                            
+                            ${data.latitude ? `<a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" target="_blank" class="action-btn btn-map">📍 நேரடி GPS மேப் பார்க்க</a>` : ''}
+                        </div>
+                    </div>
+                `;
+                gridContainer.innerHTML += cardHtml;
+            });
+        });
+    }
+
+    async function updateReportStatus(docId) {
+        const newStatus = document.getElementById(`status_${docId}`).value;
+        const newNote = document.getElementById(`note_${docId}`).value.trim();
+
+        try {
+            await db.collection("reports").doc(docId).update({
+                complaintStatus: newStatus,
+                officerNote: newNote
+            });
+            alert("✅ புகாரின் நிலை மாற்றப்பட்டது!");
+        } catch (err) {
+            alert("❌ பிழை: " + err.message);
+        }
+    }
+</script>
+
+</body>
+</html>
